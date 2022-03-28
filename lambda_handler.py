@@ -2,6 +2,7 @@ import json
 import random
 import re
 import datetime
+import boto3
 import yandexcloud
 from flask import Flask, request, session
 from yandex.cloud.resourcemanager.v1.cloud_service_pb2 import ListCloudsRequest
@@ -10,8 +11,6 @@ from yandex.cloud.resourcemanager.v1.cloud_service_pb2_grpc import CloudServiceS
 SECRET_KEY = 'a secret key'
 app = Flask(__name__)
 app.config.from_object(__name__)
-
-
 
 def write_workout_to_dynamo(user_name, workout_obj):
     """
@@ -22,7 +21,7 @@ def write_workout_to_dynamo(user_name, workout_obj):
     """
     dynamo = boto3.resource("dynamodb")
 
-    tbl = dynamo.Table("twilio-fit-log")
+    tbl = dynamo.Table("hockey-trainer-log")
 
     tbl.put_item(
         Item={
@@ -31,7 +30,6 @@ def write_workout_to_dynamo(user_name, workout_obj):
             'workout': workout_obj
         }
     )
-
 
 def build_workout():
     """
@@ -42,14 +40,29 @@ def build_workout():
         exercises = json.load(f)
         f.close()
 
-    workout = {k: random.choice(v) for k, v in exercises.items()}
+    msg_intro = "Привет! Твоя тренировка на сегодня: \n"
 
-    msg_intro = "Here is today's workout: \n"
+# Берем тренировки в зависимости от дня недели
+# Учитываем была ли выполнена предыдущая тренировка
+# Важен алгорит выбора подходящих к друг другу упражнений
+# Тренировки в хоккей сезон и межсезонье могут отличаться
+
+#    if datetime.weekday() == 0: # where 0 - monday
+#        Ice day
+#    elif datetime.weekday() == 1:
+#        Сила верх(2) + "10х3", Мощность(2) + "10x3", Скорость(2) + "20-30сек", Ловкость(2) + "20-30сек", Мобильность(8)
+#    elif datetime.weekday() == 2:
+#        Ice day
+#    elif datetime.weekday() == 3:
+#    elif datetime.weekday() == 4:
+#    elif datetime.weekday() == 5:
+#    elif datetime.weekday() == 6:
+
+    workout = {k: random.choice(v) for k, v in exercises.items()}
     exercise_msg = "\n".join([k + ": " + v for k, v in workout.items()])
     workout_msg = "\n".join([msg_intro, exercise_msg])
 
     return workout, workout_msg
-
 
 @app.route("/", methods=["POST"])
 def main():
