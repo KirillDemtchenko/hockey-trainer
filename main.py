@@ -7,7 +7,6 @@ from telebot import types
 import os
 import datetime
 
-
 def handler(event, context):
 # todo: сделать возможость смотреть тренировку на завтра
 
@@ -18,15 +17,14 @@ def handler(event, context):
     if text.lower().strip() == "/start" or text.lower().strip == "/help":
         welcome_msg = "Что бы получить тренировку отправьте команду /train"
         bot.send_message(chat_id, welcome_msg)
-
     elif text.lower().strip() == "/train":
         workout_msg = build_workout()
         bot.send_message(chat_id, workout_msg)
+        bot.send_message(chat_id, text="<a href='https://www.google.com/'>Google</a>",parse_mode=ParseMode.HTML)
     else:
         pass
 
 def message_check_in(event):
-
     # Extract the message key over payload's body
     # message = json.loads(event['body']['message'])
     body = json.loads(event['body'])
@@ -43,24 +41,25 @@ def build_workout():
     :return: A string representation of the workout.
     """
     with open("exercise_inventory.json", "r") as f:
-        exercises = json.load(f)
+        exercises_set = json.load(f)
         f.close()
 
     with open("days_sets.json", "r") as f:
         sets = json.load(f)
         f.close()
 
-    msg_intro = "👋 Тренировка на сегодня: \n"
+    msg_intro = "Тренировка на сегодня: \n"
 
-
-#    today_set = sets[0]["MONDAY"]
-
-#    println(today_set)
-
-    if today_day() in {"MONDAY", "WEDNESDAY", "SATURDAY"}:
-        workout_msg = "Сегодня на лёд! 🏒"
+    if today_day() in {"MONDAY", "WEDNESDAY"}:
+        workout_msg = "Сегодня лёд в Ак Буре 20:45! 🏒"
+    elif today_day() in {"SATURDAY"}:
+        workout_msg = "Сегодня лёд в Форварде в 20:30! 🏒"
+    elif today_day() in {"SATURDAY"}:
+        workout_msg = "Сегодня отдых"
     else:
-        workout = {k: random.choice(v) for k, v in exercises.items()}
+        today_set = sets[today_day()]
+        workout_dict = dict_intersection(today_set, exercises_set)
+        workout = {k: random.choice(v) for k, v in workout_dict.items()}
 
         exercise_msg = "\n".join([k + ":\n" + v + "\n" for k, v in workout.items()])
         workout_msg = "\n".join([msg_intro, exercise_msg])
@@ -77,3 +76,7 @@ def today_day():
                 7: "SUNDAY"}
 
     return weekdays[datetime.date.today().isoweekday()]
+
+def dict_intersection(d1, d2):
+
+    return dict((key, d2[key] or d1[key]) for key in set(d1) & set(d2))
