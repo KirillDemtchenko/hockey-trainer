@@ -12,3 +12,5 @@ resource "yandex_function" "test-function" {
     zip_filename = "function.zip"
   }
 }
+
+
