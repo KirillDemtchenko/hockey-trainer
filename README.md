@@ -1,6 +1,7 @@
 # Hockey Trainer Telegram Bot
 
 ## Idea
+This project could be seen as a notebook for your favourite exercises extended with some logic to generate workout
 
 ## Setup Enviroment
 Run virtual python eviromenent with venv  
@@ -15,7 +16,8 @@ Bot running on Yandex Cloud Functions and DynanoDB
 
 ## Continuous Deployment
 
-## Tests
+## Continuous Integration
+### Tests
 
 ## Contributing
 
