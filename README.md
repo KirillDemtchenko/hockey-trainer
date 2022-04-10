@@ -14,8 +14,8 @@ Setup source forder and install a requirements
 ## Run a bot
 Bot running on Yandex Cloud Functions and DynanoDB.  
 
-Точка входа: bot.handler  
-Переменные окружения: TELEGRAM_TOKEN  
+Entry Point: bot.handler  
+Enviroment: TELEGRAM_TOKEN  
 
 ## Continuous Deployment
 
@@ -28,8 +28,9 @@ Bot running on Yandex Cloud Functions and DynanoDB.
 * Kirill Demchemko
 
 ## Thanks
-* Matthew Vielkind for a [Page](https://www.twilio.com/blog/build-sms-exercise-training-bot-python-zappa-aws-twilio-sms)  
+* Matthew Vielkind for a [inspiration](https://www.twilio.com/blog/build-sms-exercise-training-bot-python-zappa-aws-twilio-sms)  
 * [Anton Ikryannikov](https://t.me/dobriy_trener) for exercises base and consultations
+* God Bless the Internet!
 
 ## Sources
 * Michael Terry, MD and Paul Goodman  [Hockey Anatomy](https://www.amazon.com/Hockey-Anatomy-Michael-Terry/dp/1492535885)  
