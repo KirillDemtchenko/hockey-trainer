@@ -6,6 +6,9 @@ from telebot import TeleBot
 from telebot import types
 import os
 import datetime
+import telegram
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 def handler(event, context):
 # todo: сделать возможость смотреть тренировку на завтра
@@ -20,7 +23,11 @@ def handler(event, context):
     elif text.lower().strip() == "/train":
         workout_msg = build_workout()
         bot.send_message(chat_id, workout_msg)
-        bot.send_message(chat_id, text="<a href='https://www.google.com/'>Google</a>",parse_mode=ParseMode.HTML)
+#        bot.send_message(chat_id, text="<a href='https://www.google.com/'>Google</a>",parse_mode=ParseMode.HTML)
+    elif text.lower().strip() == "/run":
+#        bot.send_message(chat_id, "Введите номер недели в формате /week<number>")
+        runnig_msg = build_running()
+        bot.send_message(chat_id, runnig_msg)
     else:
         pass
 
@@ -34,6 +41,17 @@ def message_check_in(event):
     text = body['message']['text'] # The message content
 
     return chat_id, sender, text
+
+def build_running():
+    with open("run.json", "r") as f:
+        week_runs = json.load(f)
+        f.close()
+
+        run = week_runs["1-я неделя"]
+
+        run_msg = "\n".join([k + ":\n" + v + "\n" for k, v in run.items()])
+
+    return run_msg
 
 def build_workout():
     """
@@ -80,3 +98,16 @@ def today_day():
 def dict_intersection(d1, d2):
 
     return dict((key, d2[key] or d1[key]) for key in set(d1) & set(d2))
+
+def help_command_handler(update, context):
+    """Send a message when the command /help is issued."""
+    update.message.reply_text('Type /start')
+
+def main():
+    updater = Updater(DefaultConfig.TELEGRAM_TOKEN, use_context=True)
+
+    dp = updater.dispatcher
+
+    # command handlers
+#    dp.add_handler(CommandHandler("help", help_command_handler))
+    dp.add_handler(CommandHandler("start", start_command_handler))

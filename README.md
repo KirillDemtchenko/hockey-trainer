@@ -12,7 +12,10 @@ Setup source forder and install a requirements
 `pip install -r requirements.txt`  
 
 ## Run a bot
-Bot running on Yandex Cloud Functions and DynanoDB
+Bot running on Yandex Cloud Functions and DynanoDB.  
+
+Точка входа: bot.handler  
+Переменные окружения: TELEGRAM_TOKEN  
 
 ## Continuous Deployment
 
