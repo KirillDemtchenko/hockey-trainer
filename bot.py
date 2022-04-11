@@ -1,17 +1,15 @@
-import asyncio
-import json
 import logging
 import os
 import json
 import random
-import re
 import datetime
 
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, types
 
 # Logger initialization and logging level setting
 log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO').upper())
+
 
 # Handlers
 async def start(message: types.Message):
@@ -26,22 +24,23 @@ async def start(message: types.Message):
 
 
 async def hockey_train(message: types.Message):
-        workout_msg = build_workout()
-        await message.reply(workout_msg)
+    workout_msg = build_workout()
+    await message.reply(workout_msg)
+
 
 async def running_train(message: types.Message):
     running_msg = build_running()
     await message.reply(running_msg)
+
+
 #    keyboard_markup = types.InlineKeyboardMarkup(row_width=3)
-    # default row_width is 3, so here we can omit it actually
-    # kept for clearness
 
 #    text_and_data = (
 #        ('1-ю!', 'first'),
 #        ('2-ю!', 'second'),
 #    )
-    # in real life for the callback_data the callback data factory should be used
-    # here the raw string is used for the simplicity
+# in real life for the callback_data the callback data factory should be used
+# here the raw string is used for the simplicity
 #    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
 
 #    keyboard_markup.row(*row_btns)
@@ -58,6 +57,7 @@ async def register_handlers(dp: Dispatcher):
 
     log.debug('Handlers are registered.')
 
+
 async def process_event(event, dp: Dispatcher):
     """
     Converting an Yandex.Cloud functions event to an update and
@@ -70,6 +70,7 @@ async def process_event(event, dp: Dispatcher):
     Bot.set_current(dp.bot)
     update = types.Update.to_object(update)
     await dp.process_update(update)
+
 
 async def handler(event, context):
     """Yandex.Cloud functions handler."""
@@ -85,17 +86,18 @@ async def handler(event, context):
         return {'statusCode': 200, 'body': 'ok'}
     return {'statusCode': 405}
 
+
 # Hockey functions
 def build_workout():
     """
     Builds the workout for the day.
     :return: A string representation of the workout.
     """
-    with open("exercise_inventory.json", "r") as f:
+    with open("data/exercise_inventory.json", "r") as f:
         exercises_set = json.load(f)
         f.close()
 
-    with open("days_sets.json", "r") as f:
+    with open("data/days_sets.json", "r") as f:
         sets = json.load(f)
         f.close()
 
@@ -117,6 +119,7 @@ def build_workout():
 
     return workout_msg
 
+
 def today_day():
     """Return today in text format"""
     weekdays = {1: "MONDAY",
@@ -128,9 +131,11 @@ def today_day():
                 7: "SUNDAY"}
     return weekdays[datetime.date.today().isoweekday()]
 
+
 def dict_intersection(d1, d2):
     """Math intersection for Python dictionary"""
     return dict((key, d2[key] or d1[key]) for key in set(d1) & set(d2))
+
 
 # Running functions
 def build_running():
@@ -138,7 +143,7 @@ def build_running():
     Builds the workout for the week.
     :return: A string representation of the workout.
     """
-    with open("run.json", "r") as f:
+    with open("data/run.json", "r") as f:
         week_runs = json.load(f)
         f.close()
 

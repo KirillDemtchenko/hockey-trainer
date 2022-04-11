@@ -1,1 +1,17 @@
-name: Deploy bot to Yandex Cloud
+name: Deploy Bot to Yandex Cloud
+
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Yandex Cloud "Login" Action for GitHub Actions
+        uses: yc-actions/yc-cr-login@v0.1-alpha
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+

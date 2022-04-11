@@ -1,2 +1,2 @@
-pyTelegramBotAPI
 jinja2
+aiogram==2.9.2
