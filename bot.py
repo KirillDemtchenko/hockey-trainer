@@ -101,6 +101,7 @@ def build_workout():
         sets = json.load(f)
         f.close()
 
+
     msg_intro = "Тренировка на сегодня: \n"
 
     if today_day() in {"MONDAY", "WEDNESDAY"}:
