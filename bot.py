@@ -93,6 +93,11 @@ def build_workout():
     Builds the workout for the day.
     :return: A string representation of the workout.
     """
+    """
+    TO DO:
+    Change exercises for format{"value": "Разминка в стиле мистера Бина", "link": "https://ya.ru", "set": "10x3"},
+    """
+
     with open("data/exercise_inventory.json", "r") as f:
         exercises_set = json.load(f)
         f.close()
