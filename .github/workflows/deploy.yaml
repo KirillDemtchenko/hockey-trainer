@@ -23,9 +23,9 @@ jobs:
            environment: |
               TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
            include: |
-              ./data
-              ./template
+              data
+              template
            exclude: |
-              ./workflows
-              ./infrastructure
-              ./tests
+              workflows
+              infrastructure
+              tests
