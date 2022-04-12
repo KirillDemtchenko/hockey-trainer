@@ -115,7 +115,8 @@ def build_workout():
         workout_dict = dict_intersection(today_set, exercises_set)
         workout = {k: random.choice(v) for k, v in workout_dict.items()}
 
-        exercise_msg = "\n".join([k + ":\n" + v + "\n" for k, v in workout.items()])
+        # exercise_msg = "\n".join([k + ":\n" + v + "\n" for k, v in workout.items()])
+        exercise_msg = "Привет"
         workout_msg = "\n".join([msg_intro, exercise_msg])
 
     return workout_msg
