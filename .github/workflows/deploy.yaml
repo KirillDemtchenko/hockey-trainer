@@ -8,6 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    steps:
       - name: Deploy Function
         id: sls-func
         uses: yc-actions/yc-sls-function@v2.0.0
