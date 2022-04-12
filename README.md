@@ -22,6 +22,8 @@ Enviroment: TELEGRAM_TOKEN
 
 ## Continuous Deployment
 Deploy with Github Action [yc-sls-function](https://github.com/yc-actions/yc-sls-function). 
+See file .github/workflows/deploy.yaml
+
 ## Continuous Integration
 ### Tests
 
