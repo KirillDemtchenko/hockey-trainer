@@ -1,4 +1,4 @@
-name: Deploy Bot to Yandex Cloud
+name: Deploy a Bot to Yandex Cloud
 
 on:
   push:
