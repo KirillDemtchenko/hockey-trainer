@@ -25,6 +25,7 @@ jobs:
            environment: |
               TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
            include: |
+              bot.py
               data
               templates
            exclude: |
