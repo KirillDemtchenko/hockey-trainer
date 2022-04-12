@@ -11,9 +11,12 @@ Setup source forder and install a requirements
 `source venv-hockey-trainer`  
 `pip install -r requirements.txt`  
 
-## Run a bot
+## Run a bot localy
+
+## Run a bot on Yandex Cloud
 Bot running on Yandex Cloud Functions and DynanoDB.  
 
+Cloud Funtions settings
 Entry Point: bot.handler  
 Enviroment: TELEGRAM_TOKEN  
 
