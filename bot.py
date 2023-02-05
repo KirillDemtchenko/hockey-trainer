@@ -10,12 +10,11 @@ from aiogram import Bot, Dispatcher, types
 log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO').upper())
 
-
 # Handlers
 async def start(message: types.Message):
     await message.answer('Привет, {}!'.format(message.from_user.first_name))
 
-    keyboard_markup = types.ReplyKeyboardMarkup(row_width=3)
+    keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
 
     btns_text = ('Хоккейную!', 'Беговую!')
     keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
@@ -106,22 +105,30 @@ def build_workout():
         sets = json.load(f)
         f.close()
 
+    with open("data/workout_sets.json", "r") as f:
+        workout_sets = json.load(f)
+        f.close()
 
     msg_intro = "Тренировка на сегодня: \n"
 
-    if today_day() in {"MONDAY", "WEDNESDAY"}:
-        workout_msg = "Сегодня лёд в Ак Буре 20:45! 🏒"
+    if today_day() in {"TUESDAY", "THURSDAY"}:
+        workout_msg = "Сегодня лёд в Арене 7:30! 🏒"
+    elif today_day() in {"FRIDAY"}:
+        workout_msg = "Сегодня лёд в Арене в 22:00! 🏒"
     elif today_day() in {"SATURDAY"}:
-        workout_msg = "Сегодня лёд в Форварде в 20:30! 🏒"
-    elif today_day() in {"SUNDAY"}:
         workout_msg = "Сегодня отдых"
     else:
-        today_set = sets[today_day()]
-        workout_dict = dict_intersection(today_set, exercises_set)
-        workout = {k: random.choice(v) for k, v in workout_dict.items()}
-
-        exercise_msg = "\n".join([k + ":\n" + v + "\n" for k, v in workout.items()])
+        today_set = workout_sets["MONDAY"]
+        exercise_msg = "\n".join([k + ":\n" + "".join(["  ▪️ " + l + "\n" for l in v]) for k, v in today_set.items()])
         workout_msg = "\n".join([msg_intro, exercise_msg])
+
+# Реализация формирование тренировок через пересечение и случайного выбора
+#        today_set = sets[today_day()]
+#        workout_dict = dict_intersection(today_set, exercises_set)
+#        workout = {k: random.choice(v) for k, v in workout_dict.items()}
+#
+#       exercise_msg = "\n".join([k + ":\n" + v + "\n" for k, v in workout.items()])
+#        workout_msg = "\n".join([msg_intro, exercise_msg])
 
     return workout_msg
 
