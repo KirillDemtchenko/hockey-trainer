@@ -112,7 +112,7 @@ def build_workout():
     msg_intro = "Тренировка на сегодня: \n"
 
     if today_day() in {"TUESDAY", "THURSDAY"}:
-        workout_msg = "Сегодня лёд в Арене 7:30! 🏒"
+        workout_msg = "Сегодня лёд в Арене 8:00! 🏒"
     elif today_day() in {"FRIDAY"}:
         workout_msg = "Сегодня лёд в Арене в 22:00! 🏒"
     elif today_day() in {"SATURDAY"}:
