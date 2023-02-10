@@ -118,7 +118,7 @@ def build_workout():
     elif today_day() in {"SATURDAY"}:
         workout_msg = "Сегодня отдых"
     else:
-        today_set = workout_sets["MONDAY"]
+        today_set = workout_sets[today_day()]
         exercise_msg = "\n".join([k + ":\n" + "".join(["  ▪️ " + l + "\n" for l in v]) for k, v in today_set.items()])
         workout_msg = "\n".join([msg_intro, exercise_msg])
 
