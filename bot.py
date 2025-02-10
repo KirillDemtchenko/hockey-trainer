@@ -3,19 +3,26 @@ import os
 import json
 import random
 import datetime
+import calendar
 
 from aiogram import Bot, Dispatcher, types
 
-# Logger initialization and logging level setting
+# Логгер
 log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO').upper())
 
-# Handlers
+# Функция загрузки JSON
+def load_json(filename):
+    """Загружает JSON-файл и возвращает его содержимое."""
+    with open(filename, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Обработчики сообщений
 async def start(message: types.Message):
-    await message.answer('Привет, {}!'.format(message.from_user.first_name))
+    """Обработчик команды /start"""
+    await message.answer(f'Привет, {message.from_user.first_name}!')
 
     keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
-
     btns_text = ('Хоккейную!', 'Беговую!')
     keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
 
@@ -23,145 +30,89 @@ async def start(message: types.Message):
 
 
 async def hockey_train(message: types.Message):
-    workout_msg = build_workout()
-    await message.reply(workout_msg)
+    """Отправляет сообщение с хоккейной тренировкой"""
+    await message.reply(build_workout())
 
 
 async def running_train(message: types.Message):
-    running_msg = build_running()
-    await message.reply(running_msg)
+    """Отправляет сообщение с беговой тренировкой"""
+    await message.reply(build_running())
 
 
-#    keyboard_markup = types.InlineKeyboardMarkup(row_width=3)
-
-#    text_and_data = (
-#        ('1-ю!', 'first'),
-#        ('2-ю!', 'second'),
-#    )
-# in real life for the callback_data the callback data factory should be used
-# here the raw string is used for the simplicity
-#    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-
-#    keyboard_markup.row(*row_btns)
-
-#    await message.reply("Какую неделю из 12 недельного плана подготовки вывести?", reply_markup=keyboard_markup)
-
-# Functions for Yandex.Cloud
+# Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
-    """Registration all handlers before processing update."""
-
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(hockey_train, text='Хоккейную!')
     dp.register_message_handler(running_train, text='Беговую!')
-
     log.debug('Handlers are registered.')
 
 
 async def process_event(event, dp: Dispatcher):
-    """
-    Converting an Yandex.Cloud functions event to an update and
-    handling tha update.
-    """
-
+    """Обрабатывает событие из Yandex.Cloud"""
     update = json.loads(event['body'])
-    log.debug('Update: ' + str(update))
+    log.debug('Update: %s', update)
 
     Bot.set_current(dp.bot)
-    update = types.Update.to_object(update)
-    await dp.process_update(update)
+    await dp.process_update(types.Update.to_object(update))
 
 
 async def handler(event, context):
-    """Yandex.Cloud functions handler."""
+    """Обработчик событий Yandex.Cloud"""
+    if event.get('httpMethod') == 'POST':
+        token = os.environ.get('TELEGRAM_TOKEN')
+        if not token:
+            log.error("TELEGRAM_TOKEN is not set")
+            return {'statusCode': 500, 'body': 'Internal Server Error'}
 
-    if event['httpMethod'] == 'POST':
-        # Bot and dispatcher initialization
-        bot = Bot(os.environ.get('TELEGRAM_TOKEN'))
+        bot = Bot(token)
         dp = Dispatcher(bot)
 
         await register_handlers(dp)
         await process_event(event, dp)
 
         return {'statusCode': 200, 'body': 'ok'}
-    return {'statusCode': 405}
+    
+    return {'statusCode': 405, 'body': 'Method Not Allowed'}
 
 
-# Hockey functions
+# Функции формирования тренировок
 def build_workout():
-    """
-    Builds the workout for the day.
-    :return: A string representation of the workout.
-    """
-    """
-    TO DO:
-    Change exercises for format{"value": "Разминка в стиле мистера Бина", "link": "https://ya.ru", "set": "10x3"},
-    """
-
-    with open("data/exercise_inventory.json", "r") as f:
-        exercises_set = json.load(f)
-        f.close()
-
-    with open("data/days_sets.json", "r") as f:
-        sets = json.load(f)
-        f.close()
-
-    with open("data/workout_sets.json", "r") as f:
-        workout_sets = json.load(f)
-        f.close()
+    """Формирует тренировку на день"""
+    exercises_set = load_json("data/exercise_inventory.json")
+    workout_sets = load_json("data/workout_sets.json")
 
     msg_intro = "Тренировка на сегодня: \n"
+    today = today_day()
 
-    if today_day() in {"TUESDAY", "THURSDAY"}:
-        workout_msg = "Сегодня лёд в Арене 8:00! 🏒"
-    elif today_day() in {"FRIDAY"}:
-        workout_msg = "Сегодня лёд в Арене в 22:00! 🏒"
-    elif today_day() in {"SATURDAY"}:
-        workout_msg = "Сегодня отдых"
-    else:
-        today_set = workout_sets[today_day()]
-        exercise_msg = "\n".join([k + ":\n" + "".join(["  ▪️ " + l + "\n" for l in v]) for k, v in today_set.items()])
-        workout_msg = "\n".join([msg_intro, exercise_msg])
+    special_days = {
+        "TUESDAY": "Сегодня лёд в Арене 8:00! 🏒",
+        "THURSDAY": "Сегодня лёд в Арене 8:00! 🏒",
+        "FRIDAY": "Сегодня лёд в Арене в 22:00! 🏒",
+        "SATURDAY": "Сегодня отдых"
+    }
 
-# Реализация формирование тренировок через пересечение и случайного выбора
-#        today_set = sets[today_day()]
-#        workout_dict = dict_intersection(today_set, exercises_set)
-#        workout = {k: random.choice(v) for k, v in workout_dict.items()}
-#
-#       exercise_msg = "\n".join([k + ":\n" + v + "\n" for k, v in workout.items()])
-#        workout_msg = "\n".join([msg_intro, exercise_msg])
+    if today in special_days:
+        return special_days[today]
+    
+    today_set = workout_sets.get(today, {})
+    exercise_msg = "\n".join([f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in v) for k, v in today_set.items()])
 
-    return workout_msg
+    return f"{msg_intro}\n{exercise_msg}"
+
+
+def build_running():
+    """Формирует беговую тренировку на неделю"""
+    week_runs = load_json("data/run.json")
+    run = week_runs.get("1-я неделя", {})
+
+    return "\n".join([f"{k}:\n{v}\n" for k, v in run.items()])
 
 
 def today_day():
-    """Return today in text format"""
-    weekdays = {1: "MONDAY",
-                2: "TUESDAY",
-                3: "WEDNESDAY",
-                4: "THURSDAY",
-                5: "FRIDAY",
-                6: "SATURDAY",
-                7: "SUNDAY"}
-    return weekdays[datetime.date.today().isoweekday()]
+    """Возвращает сегодняшний день недели в формате строки"""
+    return calendar.day_name[datetime.date.today().weekday()].upper()
 
 
 def dict_intersection(d1, d2):
-    """Math intersection for Python dictionary"""
-    return dict((key, d2[key] or d1[key]) for key in set(d1) & set(d2))
-
-
-# Running functions
-def build_running():
-    """
-    Builds the workout for the week.
-    :return: A string representation of the workout.
-    """
-    with open("data/run.json", "r") as f:
-        week_runs = json.load(f)
-        f.close()
-
-        run = week_runs["1-я неделя"]
-
-        run_msg = "\n".join([k + ":\n" + v + "\n" for k, v in run.items()])
-
-    return run_msg
+    """Находит пересечение двух словарей"""
+    return {key: d2.get(key, d1[key]) for key in d1.keys() & d2.keys()}
