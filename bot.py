@@ -43,7 +43,7 @@ async def running_train(message: types.Message):
 async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(hockey_train, text='Хоккейную!')
-    dp.register_message_handler(running_train, text='Беговую!')
+#    dp.register_message_handler(running_train, text='Беговую!')
     log.debug('Handlers are registered.')
 
 
@@ -87,8 +87,8 @@ def build_workout():
     special_days = {
         "TUESDAY": "Сегодня лёд в Арене 8:00! 🏒",
         "THURSDAY": "Сегодня лёд в Арене 8:00! 🏒",
-        "FRIDAY": "Сегодня лёд в Арене в 22:00! 🏒",
-        "SATURDAY": "Сегодня отдых"
+#        "FRIDAY": "Сегодня лёд в Арене в 22:00! 🏒",
+#        "SATURDAY": "Сегодня отдых"
     }
 
     if today in special_days:
