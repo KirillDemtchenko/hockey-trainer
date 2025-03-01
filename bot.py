@@ -19,7 +19,8 @@ def load_json(filename):
 # Функция добавления ссылок к упражнениям
 def add_links_to_exercises(exercises):
     link_map = {
-        "Болгарские выпады": "[Болгарские выпады](https://ya.ru)"
+        "Болгарские выпады": "[Болгарские выпады](https://ya.ru)",
+        "Жим гантелей лежа под углом вверх": "[Жим гантелей лежа под углом вверх](https://www.youtube.com/watch?v=86HgEDCwgok)"
     }
     return [link_map.get(ex, ex) for ex in exercises]
 
