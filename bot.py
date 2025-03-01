@@ -16,13 +16,17 @@ def load_json(filename):
     with open(filename, "r", encoding="utf-8") as f:
         return json.load(f)
 
-# Функция добавления ссылок к упражнениям
-def add_links_to_exercises(exercises):
+# Функция добавления ссылок и повторений к упражнениям
+def format_exercises(exercises):
     link_map = {
         "Болгарские выпады": "[Болгарские выпады](https://ya.ru)",
         "Жим гантелей лежа под углом вверх": "[Жим гантелей лежа под углом вверх](https://www.youtube.com/watch?v=86HgEDCwgok)"
     }
-    return [link_map.get(ex, ex) for ex in exercises]
+    formatted_exercises = []
+    for ex, reps in exercises.items():
+        ex_with_link = link_map.get(ex, ex)
+        formatted_exercises.append(f"{ex_with_link} — {reps} повторений")
+    return formatted_exercises
 
 # Обработчики сообщений
 async def start(message: types.Message):
@@ -95,7 +99,7 @@ def build_workout():
     
     today_set = workout_sets.get(today, {})
     exercise_msg = "\n".join([
-        f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in add_links_to_exercises(v))
+        f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v))
         for k, v in today_set.items()
     ])
 
