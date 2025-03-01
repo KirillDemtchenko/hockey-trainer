@@ -86,7 +86,7 @@ def build_workout():
     exercises_set = load_json("data/exercise_inventory.json")
     workout_sets = load_json("data/workout_sets.json")
 
-    msg_intro = "Тренировка на сегодня: \n"
+    msg_intro = "💪 Тренировка на сегодня: \n"
     today = today_day()
 
     special_days = {
