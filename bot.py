@@ -25,7 +25,7 @@ def format_exercises(exercises):
     formatted_exercises = []
     for ex, reps in exercises.items():
         ex_with_link = link_map.get(ex, ex)
-        formatted_exercises.append(f"{ex_with_link} — {reps} повторений")
+        formatted_exercises.append(f"{ex_with_link} — {reps}")
     return formatted_exercises
 
 # Обработчики сообщений
