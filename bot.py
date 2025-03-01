@@ -1,7 +1,6 @@
 import logging
 import os
 import json
-import random
 import datetime
 import calendar
 
@@ -17,6 +16,13 @@ def load_json(filename):
     with open(filename, "r", encoding="utf-8") as f:
         return json.load(f)
 
+# Функция добавления ссылок к упражнениям
+def add_links_to_exercises(exercises):
+    link_map = {
+        "Болгарские выпады": "[Болгарские выпады](https://ya.ru)"
+    }
+    return [link_map.get(ex, ex) for ex in exercises]
+
 # Обработчики сообщений
 async def start(message: types.Message):
     """Обработчик команды /start"""
@@ -28,24 +34,20 @@ async def start(message: types.Message):
 
     await message.reply("Какую тренировку показать?", reply_markup=keyboard_markup)
 
-
 async def hockey_train(message: types.Message):
     """Отправляет сообщение с хоккейной тренировкой"""
-    await message.reply(build_workout())
-
+    await message.reply(build_workout(), parse_mode="Markdown")
 
 async def running_train(message: types.Message):
     """Отправляет сообщение с беговой тренировкой"""
-    await message.reply(build_running())
-
+    await message.reply(build_running(), parse_mode="Markdown")
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(hockey_train, text='Хоккейную!')
-#    dp.register_message_handler(running_train, text='Беговую!')
+    dp.register_message_handler(running_train, text='Беговую!')
     log.debug('Handlers are registered.')
-
 
 async def process_event(event, dp: Dispatcher):
     """Обрабатывает событие из Yandex.Cloud"""
@@ -54,7 +56,6 @@ async def process_event(event, dp: Dispatcher):
 
     Bot.set_current(dp.bot)
     await dp.process_update(types.Update.to_object(update))
-
 
 async def handler(event, context):
     """Обработчик событий Yandex.Cloud"""
@@ -74,7 +75,6 @@ async def handler(event, context):
     
     return {'statusCode': 405, 'body': 'Method Not Allowed'}
 
-
 # Функции формирования тренировок
 def build_workout():
     """Формирует тренировку на день"""
@@ -86,19 +86,19 @@ def build_workout():
 
     special_days = {
         "TUESDAY": "Сегодня лёд в Арене 8:00! 🏒",
-        "THURSDAY": "Сегодня лёд в Арене 8:00! 🏒",
-#        "FRIDAY": "Сегодня лёд в Арене в 22:00! 🏒",
-#        "SATURDAY": "Сегодня отдых"
+        "THURSDAY": "Сегодня лёд в Арене 8:00! 🏒"
     }
 
     if today in special_days:
         return special_days[today]
     
     today_set = workout_sets.get(today, {})
-    exercise_msg = "\n".join([f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in v) for k, v in today_set.items()])
+    exercise_msg = "\n".join([
+        f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in add_links_to_exercises(v))
+        for k, v in today_set.items()
+    ])
 
     return f"{msg_intro}\n{exercise_msg}"
-
 
 def build_running():
     """Формирует беговую тренировку на неделю"""
@@ -107,11 +107,9 @@ def build_running():
 
     return "\n".join([f"{k}:\n{v}\n" for k, v in run.items()])
 
-
 def today_day():
     """Возвращает сегодняшний день недели в формате строки"""
     return calendar.day_name[datetime.date.today().weekday()].upper()
-
 
 def dict_intersection(d1, d2):
     """Находит пересечение двух словарей"""
