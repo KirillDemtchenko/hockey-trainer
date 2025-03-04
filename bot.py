@@ -19,8 +19,14 @@ def load_json(filename):
 # Функция добавления ссылок и повторений к упражнениям
 def format_exercises(exercises):
     link_map = {
-        "Болгарские выпады": "[Болгарские выпады](https://ya.ru)",
-        "Жим гантелей лежа под углом вверх": "[Жим гантелей лежа под углом вверх](https://www.youtube.com/watch?v=86HgEDCwgok)"
+        "Болгарские выпады": "[Болгарские выпады](https://www.youtube.com/watch?v=D1kKWQwkBqo)",
+        "Жим гантелей лежа под углом вверх": "[Жим гантелей лежа под углом вверх](https://www.youtube.com/watch?v=86HgEDCwgok)",
+        "Жим штанги лежа": "[Жим штанги лежа](https://www.youtube.com/watch?v=xIUrsrDsp_Q)",
+        "Тяга штанги к поясу": "[Тяга штанги к поясу](https://www.youtube.com/watch?v=hHdmFJI1TNI)",
+        "Cведение рук в тренажере": "[Cведение рук в тренажере](https://www.youtube.com/watch?v=KNt5kSI2jcg)",
+        "Выпады со штангой над головой": "[Выпады со штангой над головой](https://www.youtube.com/watch?v=a_qc8dhXFcI)",
+        "Разведение рук в тренажере": "[Разведение рук в тренажере](https://www.youtube.com/watch?v=WqkN_DMW0uc)",
+        "Выпады в динамике с весом": "[Выпады в динамике с весом](https://www.youtube.com/watch?v=a4lp9qkaDIY)"
     }
     formatted_exercises = []
     for ex, reps in exercises.items():
@@ -77,7 +83,7 @@ async def handler(event, context):
         await process_event(event, dp)
 
         return {'statusCode': 200, 'body': 'ok'}
-    
+
     return {'statusCode': 405, 'body': 'Method Not Allowed'}
 
 # Функции формирования тренировок
@@ -96,7 +102,7 @@ def build_workout():
 
     if today in special_days:
         return special_days[today]
-    
+
     today_set = workout_sets.get(today, {})
     exercise_msg = "\n".join([
         f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v))
