@@ -2,8 +2,6 @@ import logging
 import os
 import json
 import datetime
-import calendar
-
 from aiogram import Bot, Dispatcher, types
 
 # Логгер
@@ -14,7 +12,9 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO').upper())
 def load_json(filename):
     try:
         with open(filename, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            log.debug(f"Успешно загружен файл: {filename}")
+            return data
     except (FileNotFoundError, json.JSONDecodeError) as e:
         log.error(f"Ошибка загрузки {filename}: {e}")
         return {}
@@ -22,20 +22,15 @@ def load_json(filename):
 # Загружаем данные
 link_map = load_json("data/link_map.json")
 workout_sets = load_json("data/workout_sets.json")
+day_info = load_json("data/day_info.json")
 
-# Словарь с информацией о днях недели
-day_info = {
-    "MONDAY": {"ru": "понедельник", "eng": "Monday"},
-    "TUESDAY": {"ru": "вторник", "eng": "Tuesday"},
-    "WEDNESDAY": {"ru": "среду", "eng": "Wednesday"},
-    "THURSDAY": {"ru": "четверг", "eng": "Thursday"},
-    "FRIDAY": {"ru": "пятницу", "eng": "Friday"},
-    "SATURDAY": {"ru": "субботу", "eng": "Saturday"},
-    "SUNDAY": {"ru": "воскресенье", "eng": "Sunday"}
-}
-
-# Обратный словарь для преобразования русских названий в коды
-ru_to_code = {v["ru"].capitalize(): k for k, v in day_info.items()}
+# Формируем обратный словарь русских названий
+ru_to_code = {}
+if day_info:
+    ru_to_code = {v["ru"].capitalize(): k for k, v in day_info.items()}
+    log.debug(f"Создан словарь ru_to_code: {ru_to_code}")
+else:
+    log.warning("Файл day_info.json пуст или не загружен")
 
 # Функция добавления ссылок и повторений к упражнениям
 def format_exercises(exercises):
@@ -50,12 +45,20 @@ def format_exercises(exercises):
 async def start(message: types.Message):
     await message.answer(f'Привет, {message.from_user.first_name}!')
 
-    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(
+        row_width=1,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
     keyboard.add(types.KeyboardButton("Получить тренировку!"))
-    await message.reply("Какую тренировку показать?", reply_markup=keyboard)
+    await message.reply("Показать тренировку?", reply_markup=keyboard)
 
 async def hockey_train(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True, one_time_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(
+        row_width=3,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
     days = [types.KeyboardButton(day) for day in ru_to_code.keys()]
     keyboard.add(*days)
     await message.reply("Выберите день недели:", reply_markup=keyboard)
@@ -74,7 +77,12 @@ async def handle_day_selection(message: types.Message):
     workout = build_workout(selected_day_code)
 
     # Клавиатура с возвратом
-    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(
+        row_width=1,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    # Исправлен текст кнопки для соответствия обработчику
     keyboard.add(types.KeyboardButton("Вернуться в меню"))
 
     await message.reply(
@@ -87,8 +95,15 @@ async def handle_day_selection(message: types.Message):
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
-    dp.register_message_handler(hockey_train, text=['Получить тренировку!', 'Вернуться в меню'])
-    dp.register_message_handler(handle_day_selection, text=list(ru_to_code.keys()))
+    # Теперь обрабатываем оба варианта текста
+    dp.register_message_handler(
+        hockey_train,
+        text=['Получить тренировку!', 'Вернуться в меню']
+    )
+    dp.register_message_handler(
+        handle_day_selection,
+        text=list(ru_to_code.keys())
+    )
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
@@ -126,7 +141,8 @@ def build_workout(day=None):
     }
 
     if day in special_days:
-        return special_days[day]
+        # Добавлено форматирование Markdown для единообразия
+        return f"*{special_days[day]}*"
 
     today_set = workout_sets.get(day, {})
 
