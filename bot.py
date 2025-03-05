@@ -1,3 +1,5 @@
+
+
 import logging
 import os
 import json
@@ -79,7 +81,8 @@ async def handle_day_selection(message: types.Message):
     if not selected_day_en:
         await message.reply(
             "Неизвестный день недели. Попробуйте снова.",
-            reply_markup=types.ReplyKeyboardRemove()  # Скрываем клавиатуру
+            reply_markup=types.ReplyKeyboardRemove(),
+            disable_web_page_preview=True  # Отключаем превью ссылок
         )
         return
     
@@ -87,14 +90,19 @@ async def handle_day_selection(message: types.Message):
     await message.reply(
         workout, 
         parse_mode="Markdown",
-        reply_markup=types.ReplyKeyboardRemove()  # Скрываем клавиатуру
+        reply_markup=types.ReplyKeyboardRemove(),
+        disable_web_page_preview=True  # Отключаем превью ссылок
     )
     
     # Восстанавливаем кнопку для повторного выбора
     keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
     btns_text = ('Хоккейную!',)
     keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
-    await message.answer("Выбрать другую тренировку:", reply_markup=keyboard_markup)
+    await message.answer(
+        "Выбрать другую тренировку:",
+        reply_markup=keyboard_markup,
+        disable_web_page_preview=True  # Отключаем превью ссылок
+    )
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
@@ -141,7 +149,7 @@ def build_workout(day=None):
 
     special_days = {
         "TUESDAY": "В этот день лёд в Арене 8:00! 🏒",
-        "FRIDAY": "В этот день лёд в Арене 8:00! 🏒"
+        "THURSDAY": "В этот день лёд в Арене 8:00! 🏒"
     }
 
     if day in special_days:
