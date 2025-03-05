@@ -16,21 +16,14 @@ def load_json(filename):
     with open(filename, "r", encoding="utf-8") as f:
         return json.load(f)
 
+# Загружаем link_map из JSON-файла
+link_map = load_json("data/link_map.json")
+
 # Функция добавления ссылок и повторений к упражнениям
 def format_exercises(exercises):
-    link_map = {
-        "Болгарские выпады": "[Болгарские выпады](https://www.youtube.com/watch?v=D1kKWQwkBqo)",
-        "Жим гантелей лежа под углом вверх": "[Жим гантелей лежа под углом вверх](https://www.youtube.com/watch?v=86HgEDCwgok)",
-        "Жим штанги лежа": "[Жим штанги лежа](https://www.youtube.com/watch?v=xIUrsrDsp_Q)",
-        "Тяга штанги к поясу": "[Тяга штанги к поясу](https://www.youtube.com/watch?v=hHdmFJI1TNI)",
-        "Cведение рук в тренажере": "[Cведение рук в тренажере](https://www.youtube.com/watch?v=KNt5kSI2jcg)",
-        "Выпады со штангой над головой": "[Выпады со штангой над головой](https://www.youtube.com/watch?v=a_qc8dhXFcI)",
-        "Разведение рук в тренажере": "[Разведение рук в тренажере](https://www.youtube.com/watch?v=WqkN_DMW0uc)",
-        "Выпады в динамике с весом": "[Выпады в динамике с весом](https://www.youtube.com/watch?v=a4lp9qkaDIY)"
-    }
     formatted_exercises = []
     for ex, reps in exercises.items():
-        ex_with_link = link_map.get(ex, ex)
+        ex_with_link = link_map.get(ex, ex)  # Получаем ссылку, если есть
         formatted_exercises.append(f"{ex_with_link} — {reps}")
     return formatted_exercises
 
