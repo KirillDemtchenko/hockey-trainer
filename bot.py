@@ -1,120 +1,95 @@
 import logging
 import os
 import json
-import datetime
 import calendar
-
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # Логгер
 log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO').upper())
 
-# Функция загрузки JSON
+# Инициализация бота
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+bot = Bot(TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(storage=storage)
+
+# Состояния
+class TrainingState(StatesGroup):
+    choosing_training = State()
+    choosing_day = State()
+
+# Загрузка JSON
+
 def load_json(filename):
-    """Загружает JSON-файл и возвращает его содержимое."""
-    with open(filename, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        log.error(f"Ошибка загрузки {filename}: {e}")
+        return {}
 
-# Загружаем link_map из JSON-файла
 link_map = load_json("data/link_map.json")
+workout_sets = load_json("data/workout_sets.json")
+week_runs = load_json("data/run.json")
 
-# Функция добавления ссылок и повторений к упражнениям
-def format_exercises(exercises):
-    formatted_exercises = []
-    for ex, reps in exercises.items():
-        ex_with_link = link_map.get(ex, ex)  # Получаем ссылку, если есть
-        formatted_exercises.append(f"{ex_with_link} — {reps}")
-    return formatted_exercises
+# Кнопки выбора тренировки
+train_keyboard = ReplyKeyboardBuilder()
+train_keyboard.button(text="Хоккейную")
+train_keyboard.button(text="Беговую")
+train_keyboard.adjust(2)
 
-# Обработчики сообщений
-async def start(message: types.Message):
-    """Обработчик команды /start"""
-    await message.answer(f'Привет, {message.from_user.first_name}!')
+# Кнопки выбора дня недели
+days_keyboard = ReplyKeyboardBuilder()
+for day in calendar.day_name:
+    days_keyboard.button(text=day)
+days_keyboard.adjust(3)
 
-    keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
-    btns_text = ('Хоккейную!', 'Беговую!')
-    keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
+# Обработчик команды /start
+@dp.message(F.text == "/start")
+async def start(message: types.Message, state: FSMContext):
+    await state.set_state(TrainingState.choosing_training)
+    await message.answer("Выберите тип тренировки:", reply_markup=train_keyboard.as_markup(resize_keyboard=True))
 
-    await message.reply("Какую тренировку показать?", reply_markup=keyboard_markup)
+# Обработчик выбора тренировки
+@dp.message(TrainingState.choosing_training, F.text.in_(["Хоккейную", "Беговую"]))
+async def choose_training(message: types.Message, state: FSMContext):
+    await state.update_data(training_type=message.text)
+    await state.set_state(TrainingState.choosing_day)
+    await message.answer("Теперь выберите день недели:", reply_markup=days_keyboard.as_markup(resize_keyboard=True))
 
-async def hockey_train(message: types.Message):
-    """Отправляет сообщение с хоккейной тренировкой"""
-    await message.reply(build_workout(), parse_mode="Markdown")
+# Обработчик выбора дня недели
+@dp.message(TrainingState.choosing_day, F.text.in_(calendar.day_name))
+async def choose_day(message: types.Message, state: FSMContext):
+    user_data = await state.get_data()
+    training_type = user_data.get("training_type")
 
-async def running_train(message: types.Message):
-    """Отправляет сообщение с беговой тренировкой"""
-    await message.reply(build_running(), parse_mode="Markdown")
+    response = build_workout(message.text) if training_type == "Хоккейную" else build_running(message.text)
 
-# Регистрация обработчиков
-async def register_handlers(dp: Dispatcher):
-    dp.register_message_handler(start, commands=['start'])
-    dp.register_message_handler(hockey_train, text='Хоккейную!')
-    dp.register_message_handler(running_train, text='Беговую!')
-    log.debug('Handlers are registered.')
-
-async def process_event(event, dp: Dispatcher):
-    """Обрабатывает событие из Yandex.Cloud"""
-    update = json.loads(event['body'])
-    log.debug('Update: %s', update)
-
-    Bot.set_current(dp.bot)
-    await dp.process_update(types.Update.to_object(update))
-
-async def handler(event, context):
-    """Обработчик событий Yandex.Cloud"""
-    if event.get('httpMethod') == 'POST':
-        token = os.environ.get('TELEGRAM_TOKEN')
-        if not token:
-            log.error("TELEGRAM_TOKEN is not set")
-            return {'statusCode': 500, 'body': 'Internal Server Error'}
-
-        bot = Bot(token)
-        dp = Dispatcher(bot)
-
-        await register_handlers(dp)
-        await process_event(event, dp)
-
-        return {'statusCode': 200, 'body': 'ok'}
-
-    return {'statusCode': 405, 'body': 'Method Not Allowed'}
+    await message.answer(response, parse_mode="Markdown")
+    await state.clear()
 
 # Функции формирования тренировок
-def build_workout():
-    """Формирует тренировку на день"""
-    exercises_set = load_json("data/exercise_inventory.json")
-    workout_sets = load_json("data/workout_sets.json")
+def build_workout(day):
+    today_set = workout_sets.get(day.upper(), {})
+    exercise_msg = "\n".join(
+        [f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v)) for k, v in today_set.items()]
+    )
+    return f"💪 Тренировка на {day}:\n\n{exercise_msg}"
 
-    msg_intro = "💪 Тренировка на сегодня: \n"
-    today = today_day()
+def build_running(day):
+    run = week_runs.get("1-я неделя", {}).get(day.upper(), "Нет данных")
+    return f"🏃 Беговая тренировка на {day}:\n{run}"
 
-    special_days = {
-        "TUESDAY": "Сегодня лёд в Арене 8:00! 🏒",
-        "THURSDAY": "Сегодня лёд в Арене 8:00! 🏒"
-    }
+def format_exercises(exercises):
+    return [f"{link_map.get(ex, ex)} — {reps}" for ex, reps in exercises.items()]
 
-    if today in special_days:
-        return special_days[today]
-
-    today_set = workout_sets.get(today, {})
-    exercise_msg = "\n".join([
-        f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v))
-        for k, v in today_set.items()
-    ])
-
-    return f"{msg_intro}\n{exercise_msg}"
-
-def build_running():
-    """Формирует беговую тренировку на неделю"""
-    week_runs = load_json("data/run.json")
-    run = week_runs.get("1-я неделя", {})
-
-    return "\n".join([f"{k}:\n{v}\n" for k, v in run.items()])
-
-def today_day():
-    """Возвращает сегодняшний день недели в формате строки"""
-    return calendar.day_name[datetime.date.today().weekday()].upper()
-
-def dict_intersection(d1, d2):
-    """Находит пересечение двух словарей"""
-    return {key: d2.get(key, d1[key]) for key in d1.keys() & d2.keys()}
+# Запуск бота
+if __name__ == "__main__":
+    from aiogram import executor
+    executor.start_polling(dp, skip_updates=True)
