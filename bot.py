@@ -1,5 +1,3 @@
-
-
 import logging
 import os
 import json
@@ -56,7 +54,7 @@ async def start(message: types.Message):
     await message.answer(f'Привет, {message.from_user.first_name}!')
 
     keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
-    btns_text = ('Хоккейную!',)
+    btns_text = ('Получить тренировку!',)
     keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
 
     await message.reply("Какую тренировку показать?", reply_markup=keyboard_markup)
@@ -82,7 +80,7 @@ async def handle_day_selection(message: types.Message):
         await message.reply(
             "Неизвестный день недели. Попробуйте снова.",
             reply_markup=types.ReplyKeyboardRemove(),
-            disable_web_page_preview=True  # Отключаем превью ссылок
+            disable_web_page_preview=True
         )
         return
     
@@ -91,23 +89,13 @@ async def handle_day_selection(message: types.Message):
         workout, 
         parse_mode="Markdown",
         reply_markup=types.ReplyKeyboardRemove(),
-        disable_web_page_preview=True  # Отключаем превью ссылок
-    )
-    
-    # Восстанавливаем кнопку для повторного выбора
-    keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
-    btns_text = ('Хоккейную!',)
-    keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
-    await message.answer(
-        "Выбрать другую тренировку:",
-        reply_markup=keyboard_markup,
-        disable_web_page_preview=True  # Отключаем превью ссылок
+        disable_web_page_preview=True
     )
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
-    dp.register_message_handler(hockey_train, text='Хоккейную!')
+    dp.register_message_handler(hockey_train, text='Получить тренировку!')
     dp.register_message_handler(handle_day_selection, text=list(day_mapping.keys()))
     log.debug('Handlers are registered.')
 
