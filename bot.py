@@ -89,6 +89,12 @@ async def handle_day_selection(message: types.Message):
         parse_mode="Markdown",
         reply_markup=types.ReplyKeyboardRemove()  # Скрываем клавиатуру
     )
+    
+    # Восстанавливаем кнопку для повторного выбора
+    keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
+    btns_text = ('Хоккейную!',)
+    keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
+    await message.answer("Выбрать другую тренировку:", reply_markup=keyboard_markup)
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
