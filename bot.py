@@ -1,5 +1,3 @@
-
-
 import logging
 import os
 import json
@@ -63,7 +61,11 @@ async def start(message: types.Message):
 
 async def hockey_train(message: types.Message):
     """Отправляет сообщение с выбором дня для хоккейной тренировки"""
-    keyboard_markup = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True, one_time_keyboard=True)
+    keyboard_markup = types.ReplyKeyboardMarkup(
+        row_width=3, 
+        resize_keyboard=True, 
+        one_time_keyboard=True  # Клавиатура скроется после выбора
+    )
     days_ru = list(day_mapping.keys())
     buttons = [types.KeyboardButton(day) for day in days_ru]
     keyboard_markup.add(*buttons)
@@ -73,11 +75,20 @@ async def handle_day_selection(message: types.Message):
     """Обрабатывает выбор дня недели для тренировки"""
     selected_day_ru = message.text
     selected_day_en = day_mapping.get(selected_day_ru)
+    
     if not selected_day_en:
-        await message.reply("Неизвестный день недели. Попробуйте снова.")
+        await message.reply(
+            "Неизвестный день недели. Попробуйте снова.",
+            reply_markup=types.ReplyKeyboardRemove()  # Скрываем клавиатуру
+        )
         return
+    
     workout = build_workout(selected_day_en)
-    await message.reply(workout, parse_mode="Markdown")
+    await message.reply(
+        workout, 
+        parse_mode="Markdown",
+        reply_markup=types.ReplyKeyboardRemove()  # Скрываем клавиатуру
+    )
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
