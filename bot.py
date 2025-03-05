@@ -1,5 +1,4 @@
 
-
 import logging
 import os
 import json
@@ -64,8 +63,8 @@ async def start(message: types.Message):
 async def hockey_train(message: types.Message):
     """Отправляет сообщение с выбором дня для хоккейной тренировки"""
     keyboard_markup = types.ReplyKeyboardMarkup(
-        row_width=3, 
-        resize_keyboard=True, 
+        row_width=3,
+        resize_keyboard=True,
         one_time_keyboard=True  # Клавиатура скроется после выбора
     )
     days_ru = list(day_mapping.keys())
@@ -77,7 +76,7 @@ async def handle_day_selection(message: types.Message):
     """Обрабатывает выбор дня недели для тренировки"""
     selected_day_ru = message.text
     selected_day_en = day_mapping.get(selected_day_ru)
-    
+
     if not selected_day_en:
         await message.reply(
             "Неизвестный день недели. Попробуйте снова.",
@@ -85,10 +84,10 @@ async def handle_day_selection(message: types.Message):
             disable_web_page_preview=True
         )
         return
-    
+
     workout = build_workout(selected_day_en)
     await message.reply(
-        workout, 
+        workout,
         parse_mode="Markdown",
         reply_markup=types.ReplyKeyboardRemove(),
         disable_web_page_preview=True
@@ -138,8 +137,8 @@ def build_workout(day=None):
     msg_intro = f"💪 Тренировка на {day_ru.get(day, day.lower())}: \n"
 
     special_days = {
-        "TUESDAY": "В этот день лёд в Арене 8:00! 🏒",
-        "THURSDAY": "В этот день лёд в Арене 8:00! 🏒"
+        "TUESDAY": "В этот день лёд в Арене 7:30! 🏒",
+        "FRIDAY": "В этот день лёд в Арене 7:30! 🏒"
     }
 
     if day in special_days:
