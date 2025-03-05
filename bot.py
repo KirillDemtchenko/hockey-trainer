@@ -147,7 +147,7 @@ def build_workout(day=None):
     today_set = workout_sets.get(day, {})
 
     if not today_set:
-        return f"{msg_intro}На этот день тренировок пока нет 🙅♂️"
+        return f"{msg_intro}На этот день тренировок пока нет 🌿"
 
     exercise_msg = "\n".join([
         f"*{k}:*\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v))
