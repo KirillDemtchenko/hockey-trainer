@@ -1,3 +1,5 @@
+
+
 import logging
 import os
 import json
@@ -89,16 +91,6 @@ async def handle_day_selection(message: types.Message):
         workout, 
         parse_mode="Markdown",
         reply_markup=types.ReplyKeyboardRemove(),
-        disable_web_page_preview=True
-    )
-    
-    # Восстанавливаем кнопку без текстового сообщения
-    keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
-    btns_text = ('Получить тренировку!',)
-    keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
-    await message.answer(
-        "\u200b",  # Нулевой пробел для скрытия текста
-        reply_markup=keyboard_markup,
         disable_web_page_preview=True
     )
 
