@@ -1,3 +1,5 @@
+
+
 import logging
 import os
 import json
@@ -19,6 +21,27 @@ def load_json(filename):
 # Загружаем link_map из JSON-файла
 link_map = load_json("data/link_map.json")
 
+# Словари для преобразования дней недели
+day_mapping = {
+    "Понедельник": "MONDAY",
+    "Вторник": "TUESDAY",
+    "Среда": "WEDNESDAY",
+    "Четверг": "THURSDAY",
+    "Пятница": "FRIDAY",
+    "Суббота": "SATURDAY",
+    "Воскресенье": "SUNDAY"
+}
+
+day_ru = {
+    "MONDAY": "понедельник",
+    "TUESDAY": "вторник",
+    "WEDNESDAY": "среду",
+    "THURSDAY": "четверг",
+    "FRIDAY": "пятницу",
+    "SATURDAY": "субботу",
+    "SUNDAY": "воскресенье"
+}
+
 # Функция добавления ссылок и повторений к упражнениям
 def format_exercises(exercises):
     formatted_exercises = []
@@ -33,24 +56,34 @@ async def start(message: types.Message):
     await message.answer(f'Привет, {message.from_user.first_name}!')
 
     keyboard_markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
-    btns_text = ('Хоккейную!', 'Беговую!')
+    btns_text = ('Хоккейную!',)
     keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
 
     await message.reply("Какую тренировку показать?", reply_markup=keyboard_markup)
 
 async def hockey_train(message: types.Message):
-    """Отправляет сообщение с хоккейной тренировкой"""
-    await message.reply(build_workout(), parse_mode="Markdown")
+    """Отправляет сообщение с выбором дня для хоккейной тренировки"""
+    keyboard_markup = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True, one_time_keyboard=True)
+    days_ru = list(day_mapping.keys())
+    buttons = [types.KeyboardButton(day) for day in days_ru]
+    keyboard_markup.add(*buttons)
+    await message.reply("Выберите день недели:", reply_markup=keyboard_markup)
 
-async def running_train(message: types.Message):
-    """Отправляет сообщение с беговой тренировкой"""
-    await message.reply(build_running(), parse_mode="Markdown")
+async def handle_day_selection(message: types.Message):
+    """Обрабатывает выбор дня недели для тренировки"""
+    selected_day_ru = message.text
+    selected_day_en = day_mapping.get(selected_day_ru)
+    if not selected_day_en:
+        await message.reply("Неизвестный день недели. Попробуйте снова.")
+        return
+    workout = build_workout(selected_day_en)
+    await message.reply(workout, parse_mode="Markdown")
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(hockey_train, text='Хоккейную!')
-    dp.register_message_handler(running_train, text='Беговую!')
+    dp.register_message_handler(handle_day_selection, text=list(day_mapping.keys()))
     log.debug('Handlers are registered.')
 
 async def process_event(event, dp: Dispatcher):
@@ -80,36 +113,30 @@ async def handler(event, context):
     return {'statusCode': 405, 'body': 'Method Not Allowed'}
 
 # Функции формирования тренировок
-def build_workout():
+def build_workout(day=None):
     """Формирует тренировку на день"""
+    if day is None:
+        day = today_day()
     exercises_set = load_json("data/exercise_inventory.json")
     workout_sets = load_json("data/workout_sets.json")
 
-    msg_intro = "💪 Тренировка на сегодня: \n"
-    today = today_day()
+    msg_intro = f"💪 Тренировка на {day_ru.get(day, day.lower())}: \n"
 
     special_days = {
-        "TUESDAY": "Сегодня лёд в Арене 8:00! 🏒",
-        "THURSDAY": "Сегодня лёд в Арене 8:00! 🏒"
+        "TUESDAY": "В этот день лёд в Арене 8:00! 🏒",
+        "THURSDAY": "В этот день лёд в Арене 8:00! 🏒"
     }
 
-    if today in special_days:
-        return special_days[today]
+    if day in special_days:
+        return special_days[day]
 
-    today_set = workout_sets.get(today, {})
+    today_set = workout_sets.get(day, {})
     exercise_msg = "\n".join([
         f"{k}:\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v))
         for k, v in today_set.items()
     ])
 
     return f"{msg_intro}\n{exercise_msg}"
-
-def build_running():
-    """Формирует беговую тренировку на неделю"""
-    week_runs = load_json("data/run.json")
-    run = week_runs.get("1-я неделя", {})
-
-    return "\n".join([f"{k}:\n{v}\n" for k, v in run.items()])
 
 def today_day():
     """Возвращает сегодняшний день недели в формате строки"""
