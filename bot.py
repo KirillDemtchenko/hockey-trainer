@@ -3,11 +3,11 @@ import os
 import json
 import datetime
 import calendar
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
-from aiogram.filters.state import State, StatesGroup
+from aiogram import Bot, Dispatcher, types
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.utils import executor
 
 # Логирование
 logging.basicConfig(level=logging.INFO)
@@ -33,19 +33,17 @@ run_plan = load_json("data/run.json")
 
 # Клавиатуры
 def create_main_keyboard():
-    builder = ReplyKeyboardBuilder()
-    builder.add(KeyboardButton(text="Хоккейную!"))
-    builder.add(KeyboardButton(text="Беговую!"))
-    return builder.as_markup(resize_keyboard=True)
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(KeyboardButton("Хоккейную!"))
+    keyboard.add(KeyboardButton("Беговую!"))
+    return keyboard
 
 def create_day_keyboard():
     days = ["Понедельник", "Вторник", "Среда",
             "Четверг", "Пятница", "Суббота", "Воскресенье"]
-    builder = ReplyKeyboardBuilder()
-    for day in days:
-        builder.add(KeyboardButton(text=day))
-    builder.adjust(3)
-    return builder.as_markup(resize_keyboard=True)
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+    keyboard.add(*[KeyboardButton(day) for day in days])
+    return keyboard
 
 # Вспомогательные функции
 def format_exercises(exercises):
@@ -90,48 +88,39 @@ def build_running(selected_day=None):
     return f"*Бег {selected_day}:*\n{week_runs.get(selected_day, 'Нет данных')}"
 
 # Инициализация бота
-dp = Dispatcher()
-bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
 
 # Обработчики
-@dp.message(Command("start"))
+@dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
     await message.answer(
         f"Привет, {message.from_user.first_name}!",
         reply_markup=create_main_keyboard()
     )
 
-@dp.message(F.text == "Хоккейную!")
+@dp.message_handler(text="Хоккейную!")
 async def hockey_selected(message: types.Message, state: FSMContext):
-    await state.set_state(TrainingStates.choosing_day_hockey)
+    await TrainingStates.choosing_day_hockey.set()
     await message.answer("Выберите день:", reply_markup=create_day_keyboard())
 
-@dp.message(F.text == "Беговую!")
+@dp.message_handler(text="Беговую!")
 async def running_selected(message: types.Message, state: FSMContext):
-    await state.set_state(TrainingStates.choosing_day_running)
+    await TrainingStates.choosing_day_running.set()
     await message.answer("Выберите день:", reply_markup=create_day_keyboard())
 
-@dp.message(TrainingStates.choosing_day_hockey)
+@dp.message_handler(state=TrainingStates.choosing_day_hockey)
 async def process_hockey_day(message: types.Message, state: FSMContext):
-    await state.clear()
+    await state.finish()
     day_en = translate_day(message.text)
     await message.answer(build_workout(day_en), parse_mode="Markdown")
 
-@dp.message(TrainingStates.choosing_day_running)
+@dp.message_handler(state=TrainingStates.choosing_day_running)
 async def process_running_day(message: types.Message, state: FSMContext):
-    await state.clear()
+    await state.finish()
     day_en = translate_day(message.text)
     await message.answer(build_running(day_en), parse_mode="Markdown")
 
-# Обработчик для Yandex Cloud
-async def handler(event, context):
-    if not os.getenv("TELEGRAM_TOKEN"):
-        return {"statusCode": 500, "body": "TELEGRAM_TOKEN not set"}
-
-    try:
-        update = types.Update.model_validate(json.loads(event['body']))
-        await dp.feed_update(bot, update)
-        return {"statusCode": 200}
-    except Exception as e:
-        logger.error(f"Ошибка обработки запроса: {e}")
-        return {"statusCode": 500, "body": str(e)}
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)

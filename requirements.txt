@@ -1,4 +1,2 @@
 jinja2
 aiogram==2.9.2
-aiogram==3.0.0rc1
-pydantic
