@@ -4,10 +4,8 @@ import json
 import calendar
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.dispatcher import Dispatcher
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
 # Логгер
 log = logging.getLogger(__name__)
@@ -16,8 +14,7 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO').upper())
 # Инициализация бота
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = Bot(TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+dp = Dispatcher()
 
 # Состояния
 class TrainingState(StatesGroup):
@@ -47,13 +44,13 @@ days_keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True
 days_keyboard.row(*[KeyboardButton(day) for day in calendar.day_name])
 
 # Обработчик команды /start
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
-    await TrainingState.choosing_training.set()
+@dp.message(commands=['start'])
+async def start(message: types.Message, state: FSMContext):
     await message.answer("Выберите тип тренировки:", reply_markup=train_keyboard)
+    await state.set_state(TrainingState.choosing_training)
 
 # Обработчик выбора тренировки
-@dp.message_handler(state=TrainingState.choosing_training)
+@dp.message(TrainingState.choosing_training)
 async def choose_training(message: types.Message, state: FSMContext):
     training_type = message.text
     if training_type not in ["Хоккейную", "Беговую"]:
@@ -61,14 +58,14 @@ async def choose_training(message: types.Message, state: FSMContext):
         return
 
     await state.update_data(training_type=training_type)
-    await TrainingState.choosing_day.set()
     await message.answer("Теперь выберите день недели:", reply_markup=days_keyboard)
+    await state.set_state(TrainingState.choosing_day)
 
 # Обработчик выбора дня недели
-@dp.message_handler(state=TrainingState.choosing_day)
+@dp.message(TrainingState.choosing_day)
 async def choose_day(message: types.Message, state: FSMContext):
     day = message.text.upper()
-    if day not in map(str.upper, calendar.day_name):
+    if day not in calendar.day_name:
         await message.answer("Пожалуйста, выберите день с кнопки!")
         return
 
@@ -81,7 +78,7 @@ async def choose_day(message: types.Message, state: FSMContext):
         response = build_running(day)
 
     await message.answer(response, parse_mode="Markdown")
-    await state.finish()
+    await state.clear()
 
 # Функции формирования тренировок
 def build_workout(day):
@@ -98,7 +95,5 @@ def build_running(day):
 def format_exercises(exercises):
     return [f"{link_map.get(ex, ex)} — {reps}" for ex, reps in exercises.items()]
 
-# Запуск бота
-if __name__ == "__main__":
-    from aiogram import executor
-    executor.start_polling(dp, skip_updates=True)
+# Регистрация хэндлеров
+dp.include_router(dp)
