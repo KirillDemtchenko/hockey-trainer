@@ -104,6 +104,7 @@ async def register_handlers(dp: Dispatcher):
         handle_day_selection,
         text=list(ru_to_code.keys())
     )
+    dp.register_message_handler(show_current_week, commands=['week'])
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
@@ -161,3 +162,60 @@ def today_day():
 
 def dict_intersection(d1, d2):
     return {key: d2.get(key, d1[key]) for key in d1.keys() & d2.keys()}
+
+# === Работа с неделями и индексом ===
+WORKOUTS_DIR = "workouts"
+INDEX_FILE = os.path.join(WORKOUTS_DIR, "weeks_index.json")
+START_DATE = datetime.date(2024, 1, 1)  # Можно вынести в env или конфиг
+
+def get_week_index(today=None):
+    if today is None:
+        today = datetime.date.today()
+    delta = today - START_DATE
+    week_num = delta.days // 7  # 0 — первая неделя
+    return week_num
+
+def get_weeks_list():
+    try:
+        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        log.error(f"Ошибка загрузки weeks_index.json: {e}")
+        return []
+
+def get_week_filename(week_num):
+    weeks = get_weeks_list()
+    if not weeks:
+        return None
+    week_num = week_num % len(weeks)  # Зацикливаем
+    return weeks[week_num]
+
+def get_workout_for_week(week_num):
+    week_filename = get_week_filename(week_num)
+    if not week_filename:
+        return None
+    filepath = os.path.join(WORKOUTS_DIR, week_filename)
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        log.error(f"Ошибка загрузки {filepath}: {e}")
+        return None
+
+def format_week_workout(week_num):
+    week_data = get_workout_for_week(week_num)
+    if not week_data:
+        return f"Нет данных для недели {week_num + 1}"
+    msg = f"*Тренировки на неделю {week_num + 1}:*\n\n"
+    for day in week_data.get("days", []):
+        msg += f"*{day['day']}:*\n"
+        for ex in day.get("exercises", []):
+            msg += f"  ▪️ {ex}\n"
+        msg += "\n"
+    return msg
+
+# === Команда /week ===
+async def show_current_week(message: types.Message):
+    week_num = get_week_index()
+    msg = format_week_workout(week_num)
+    await message.reply(msg, parse_mode="Markdown")
