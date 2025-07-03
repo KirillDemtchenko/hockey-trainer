@@ -249,6 +249,7 @@ async def goto_week(message: types.Message):
             return
         goto_num = int(parts[1]) - 1
         weeks = get_weeks_list()
+        await message.reply(f"weeks: {weeks}")  # временно для отладки
         if not (0 <= goto_num < len(weeks)):
             await message.reply(f"Неделя должна быть от 1 до {len(weeks)}")
             return
