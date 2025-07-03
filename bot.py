@@ -167,7 +167,7 @@ def dict_intersection(d1, d2):
     return {key: d2.get(key, d1[key]) for key in d1.keys() & d2.keys()}
 
 # === Работа с неделями и индексом ===
-WORKOUTS_DIR = "workouts"
+WORKOUTS_DIR = os.path.join("data", "workouts")
 INDEX_FILE = os.path.join(WORKOUTS_DIR, "weeks_index.json")
 START_DATE = datetime.date(2024, 1, 1)  # Можно вынести в env или конфиг
 
