@@ -105,6 +105,9 @@ async def register_handlers(dp: Dispatcher):
         text=list(ru_to_code.keys())
     )
     dp.register_message_handler(show_current_week, commands=['week'])
+    dp.register_message_handler(show_next_week, commands=['next'])
+    dp.register_message_handler(show_prev_week, commands=['prev'])
+    dp.register_message_handler(goto_week, commands=['goto'])
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
@@ -219,3 +222,39 @@ async def show_current_week(message: types.Message):
     week_num = get_week_index()
     msg = format_week_workout(week_num)
     await message.reply(msg, parse_mode="Markdown")
+
+# === Глобальная переменная для смещения недели (только для одного пользователя/serverless) ===
+current_week_offset = 0
+
+async def show_next_week(message: types.Message):
+    global current_week_offset
+    current_week_offset += 1
+    week_num = get_week_index() + current_week_offset
+    msg = format_week_workout(week_num)
+    await message.reply(msg, parse_mode="Markdown")
+
+async def show_prev_week(message: types.Message):
+    global current_week_offset
+    current_week_offset -= 1
+    week_num = get_week_index() + current_week_offset
+    msg = format_week_workout(week_num)
+    await message.reply(msg, parse_mode="Markdown")
+
+async def goto_week(message: types.Message):
+    global current_week_offset
+    try:
+        parts = message.text.strip().split()
+        if len(parts) != 2:
+            await message.reply("Используй: /goto <номер недели>")
+            return
+        goto_num = int(parts[1]) - 1
+        weeks = get_weeks_list()
+        if not (0 <= goto_num < len(weeks)):
+            await message.reply(f"Неделя должна быть от 1 до {len(weeks)}")
+            return
+        # Считаем смещение относительно текущей недели
+        current_week_offset = goto_num - get_week_index()
+        msg = format_week_workout(goto_num)
+        await message.reply(msg, parse_mode="Markdown")
+    except Exception as e:
+        await message.reply(f"Ошибка: {e}\nИспользуй: /goto <номер недели>")
