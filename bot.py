@@ -48,7 +48,7 @@ async def start(message: types.Message):
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    keyboard.add(types.KeyboardButton("Тренировка на сегодня"))
+    # keyboard.add(types.KeyboardButton("Тренировка на сегодня"))  # Удалено по просьбе пользователя
     keyboard.add(types.KeyboardButton("Выбор дня"))
     await delete_all_and_send(message, "Показать тренировку?", reply_markup=keyboard)
 
@@ -96,7 +96,8 @@ async def handle_day_selection(message: types.Message):
         )
         return
 
-    workout = build_workout(selected_day_code)
+    week_num = get_week_index() + current_week_offset
+    workout = build_workout(selected_day_code, week_num)
 
     # Клавиатура только с возвратом к выбору дня
     keyboard = types.ReplyKeyboardMarkup(
@@ -114,34 +115,7 @@ async def handle_day_selection(message: types.Message):
     )
 
 # === Тренировка на сегодня ===
-async def today_workout(message: types.Message):
-    week_num = get_week_index() + current_week_offset
-    week_data = get_workout_for_week(week_num)
-    if not week_data:
-        await delete_all_and_send(message, "Нет данных для текущей недели.")
-        return
-
-    today = datetime.date.today()
-    days_ru = {
-        0: "Понедельник",
-        1: "Вторник",
-        2: "Среда",
-        3: "Четверг",
-        4: "Пятница",
-        5: "Суббота",
-        6: "Воскресенье"
-    }
-    today_ru = days_ru[today.weekday()]
-
-    for day in week_data.get("days", []):
-        if day["day"] == today_ru:
-            msg = f"*Тренировка на сегодня ({today_ru}):*\n"
-            for ex in day.get("exercises", []):
-                msg += f"  ▪️ {ex}\n"
-            await delete_all_and_send(message, msg, parse_mode="Markdown")
-            return
-
-    await delete_all_and_send(message, f"На сегодня ({today_ru}) тренировки нет 🌿")
+# Удаляю функцию today_workout и её регистрацию в register_handlers
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
@@ -159,8 +133,6 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(show_next_week, commands=['next'])
     dp.register_message_handler(show_prev_week, commands=['prev'])
     dp.register_message_handler(goto_week, commands=['goto'])
-    dp.register_message_handler(today_workout, commands=['today'])
-    dp.register_message_handler(today_workout, text=["Тренировка на сегодня"])
     dp.register_message_handler(return_to_menu, text="Вернуться в меню")
     dp.register_message_handler(hockey_train, text=["Выбор дня"])
     dp.register_message_handler(return_to_day_select, text="Назад к выбору дня")
@@ -188,32 +160,33 @@ async def handler(event, context):
     return {'statusCode': 405, 'body': 'Method Not Allowed'}
 
 # Функции формирования тренировок
-def build_workout(day=None):
+def build_workout(day=None, week_num=None):
+    # Определяем номер недели
+    if week_num is None:
+        week_num = get_week_index() + current_week_offset
+    # Определяем день недели
     if day is None:
         day = today_day()
-
+    # Загружаем файл недели
+    week_data = get_workout_for_week(week_num)
+    if not week_data:
+        return f"Нет данных для недели {week_num + 1}"
+    # Получаем тренировку на нужный день
+    today_set = week_data.get(day, {})
     day_data = day_info.get(day, {})
     msg_intro = f"💪 *Тренировка на {day_data.get('ru', day.lower())}:*\n\n"
-
     special_days = {
         "TUESDAY": "В этот день лёд в Арене 7:30! 🏒",
         "THURSDAY": "В этот день лёд в Арене 7:30! 🏒"
     }
-
     if day in special_days:
-        # Добавлено форматирование Markdown для единообразия
         return f"*{special_days[day]}*"
-
-    today_set = workout_sets.get(day, {})
-
     if not today_set:
         return f"{msg_intro}На этот день тренировок пока нет 🌿"
-
     exercise_msg = "\n".join([
         f"*{k}:*\n" + "\n".join(f"  ▪️ {l}" for l in format_exercises(v))
         for k, v in today_set.items()
     ])
-
     return f"{msg_intro}{exercise_msg}"
 
 def today_day():
