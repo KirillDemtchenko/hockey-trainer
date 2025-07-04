@@ -65,27 +65,25 @@ async def hockey_train(message: types.Message):
     keyboard.add(types.KeyboardButton("Вернуться в меню"))
     await message.reply("Выберите день недели:", reply_markup=keyboard)
 
-# === Глобальная переменная для хранения id последнего сообщения бота ===
-last_bot_message_id = None
+# === Глобальный список id сообщений для удаления ===
+bot_message_ids = []
 
-async def delete_prev_and_send(message, text, reply_markup=None, parse_mode=None):
-    global last_bot_message_id
-    # Удаляем предыдущее сообщение пользователя (если не команда)
+async def delete_all_and_send(message, text, reply_markup=None, parse_mode=None):
+    global bot_message_ids
+    # Удаляем все сообщения из списка
+    for msg_id in bot_message_ids:
+        try:
+            await message.bot.delete_message(message.chat.id, msg_id)
+        except Exception:
+            pass
+    # Удаляем сообщение пользователя
     try:
-        if message.reply_to_message:
-            await message.bot.delete_message(message.chat.id, message.reply_to_message.message_id)
         await message.bot.delete_message(message.chat.id, message.message_id)
     except Exception:
         pass
-    # Удаляем предыдущее сообщение бота
-    if last_bot_message_id:
-        try:
-            await message.bot.delete_message(message.chat.id, last_bot_message_id)
-        except Exception:
-            pass
     # Отправляем новое сообщение
     sent = await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
-    last_bot_message_id = sent.message_id
+    bot_message_ids = [sent.message_id]
     return sent
 
 async def handle_day_selection(message: types.Message):
@@ -93,7 +91,7 @@ async def handle_day_selection(message: types.Message):
     selected_day_code = ru_to_code.get(selected_day_ru)
 
     if not selected_day_code:
-        await delete_prev_and_send(
+        await delete_all_and_send(
             message,
             "Неизвестный день недели. Попробуйте снова.",
             reply_markup=types.ReplyKeyboardRemove()
@@ -110,7 +108,7 @@ async def handle_day_selection(message: types.Message):
     )
     keyboard.add(types.KeyboardButton("Назад к выбору дня"))
 
-    await delete_prev_and_send(
+    await delete_all_and_send(
         message,
         workout,
         parse_mode="Markdown",
