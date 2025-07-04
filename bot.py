@@ -142,7 +142,7 @@ async def register_handlers(dp: Dispatcher):
     # Теперь обрабатываем оба варианта текста
     dp.register_message_handler(
         hockey_train,
-        text=['Получить тренировку!', 'Вернуться в меню']
+        text=['Выбор дня']
     )
     dp.register_message_handler(
         handle_day_selection,
