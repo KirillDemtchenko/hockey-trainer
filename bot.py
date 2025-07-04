@@ -50,7 +50,7 @@ async def start(message: types.Message):
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    keyboard.add(types.KeyboardButton("Получить тренировку!"))
+    keyboard.add(types.KeyboardButton("Тренировка на сегодня"))
     await message.reply("Показать тренировку?", reply_markup=keyboard)
 
 async def hockey_train(message: types.Message):
@@ -92,6 +92,36 @@ async def handle_day_selection(message: types.Message):
         disable_web_page_preview=True
     )
 
+# === Тренировка на сегодня ===
+async def today_workout(message: types.Message):
+    week_num = get_week_index() + current_week_offset
+    week_data = get_workout_for_week(week_num)
+    if not week_data:
+        await message.reply("Нет данных для текущей недели.")
+        return
+
+    today = datetime.date.today()
+    days_ru = {
+        0: "Понедельник",
+        1: "Вторник",
+        2: "Среда",
+        3: "Четверг",
+        4: "Пятница",
+        5: "Суббота",
+        6: "Воскресенье"
+    }
+    today_ru = days_ru[today.weekday()]
+
+    for day in week_data.get("days", []):
+        if day["day"] == today_ru:
+            msg = f"*Тренировка на сегодня ({today_ru}):*\n"
+            for ex in day.get("exercises", []):
+                msg += f"  ▪️ {ex}\n"
+            await message.reply(msg, parse_mode="Markdown")
+            return
+
+    await message.reply(f"На сегодня ({today_ru}) тренировки нет 🌿")
+
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
@@ -108,6 +138,8 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(show_next_week, commands=['next'])
     dp.register_message_handler(show_prev_week, commands=['prev'])
     dp.register_message_handler(goto_week, commands=['goto'])
+    dp.register_message_handler(today_workout, commands=['today'])
+    dp.register_message_handler(today_workout, text=["Тренировка на сегодня"])
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
