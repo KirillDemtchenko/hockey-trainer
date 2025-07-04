@@ -43,8 +43,6 @@ def format_exercises(exercises):
 
 # Обработчики сообщений
 async def start(message: types.Message):
-    await message.answer(f'Привет, {message.from_user.first_name}!')
-
     keyboard = types.ReplyKeyboardMarkup(
         row_width=1,
         resize_keyboard=True,
@@ -52,7 +50,7 @@ async def start(message: types.Message):
     )
     keyboard.add(types.KeyboardButton("Тренировка на сегодня"))
     keyboard.add(types.KeyboardButton("Выбор дня"))
-    await message.reply("Показать тренировку?", reply_markup=keyboard)
+    await delete_all_and_send(message, "Показать тренировку?", reply_markup=keyboard)
 
 async def hockey_train(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(
@@ -63,7 +61,7 @@ async def hockey_train(message: types.Message):
     days = [types.KeyboardButton(day) for day in ru_to_code.keys()]
     keyboard.add(*days)
     keyboard.add(types.KeyboardButton("Вернуться в меню"))
-    await message.reply("Выберите день недели:", reply_markup=keyboard)
+    await delete_all_and_send(message, "Выберите день недели:", reply_markup=keyboard)
 
 # === Глобальный список id сообщений для удаления ===
 bot_message_ids = []
@@ -120,7 +118,7 @@ async def today_workout(message: types.Message):
     week_num = get_week_index() + current_week_offset
     week_data = get_workout_for_week(week_num)
     if not week_data:
-        await message.reply("Нет данных для текущей недели.")
+        await delete_all_and_send(message, "Нет данных для текущей недели.")
         return
 
     today = datetime.date.today()
@@ -140,10 +138,10 @@ async def today_workout(message: types.Message):
             msg = f"*Тренировка на сегодня ({today_ru}):*\n"
             for ex in day.get("exercises", []):
                 msg += f"  ▪️ {ex}\n"
-            await message.reply(msg, parse_mode="Markdown")
+            await delete_all_and_send(message, msg, parse_mode="Markdown")
             return
 
-    await message.reply(f"На сегодня ({today_ru}) тренировки нет 🌿")
+    await delete_all_and_send(message, f"На сегодня ({today_ru}) тренировки нет 🌿")
 
 # Регистрация обработчиков
 async def register_handlers(dp: Dispatcher):
@@ -279,7 +277,7 @@ def format_week_workout(week_num):
 async def show_current_week(message: types.Message):
     week_num = get_week_index()
     msg = format_week_workout(week_num)
-    await message.reply(msg, parse_mode="Markdown")
+    await delete_all_and_send(message, msg, parse_mode="Markdown")
 
 # === Глобальная переменная для смещения недели (только для одного пользователя/serverless) ===
 current_week_offset = 0
@@ -289,34 +287,33 @@ async def show_next_week(message: types.Message):
     current_week_offset += 1
     week_num = get_week_index() + current_week_offset
     msg = format_week_workout(week_num)
-    await message.reply(msg, parse_mode="Markdown")
+    await delete_all_and_send(message, msg, parse_mode="Markdown")
 
 async def show_prev_week(message: types.Message):
     global current_week_offset
     current_week_offset -= 1
     week_num = get_week_index() + current_week_offset
     msg = format_week_workout(week_num)
-    await message.reply(msg, parse_mode="Markdown")
+    await delete_all_and_send(message, msg, parse_mode="Markdown")
 
 async def goto_week(message: types.Message):
     global current_week_offset
     try:
         parts = message.text.strip().split()
         if len(parts) != 2:
-            await message.reply("Используй: /goto <номер недели>")
+            await delete_all_and_send(message, "Используй: /goto <номер недели>")
             return
         goto_num = int(parts[1]) - 1
         weeks = get_weeks_list()
-        await message.reply(f"weeks: {weeks}")  # временно для отладки
         if not (0 <= goto_num < len(weeks)):
-            await message.reply(f"Неделя должна быть от 1 до {len(weeks)}")
+            await delete_all_and_send(message, f"Неделя должна быть от 1 до {len(weeks)}")
             return
         # Считаем смещение относительно текущей недели
         current_week_offset = goto_num - get_week_index()
         msg = format_week_workout(goto_num)
-        await message.reply(msg, parse_mode="Markdown")
+        await delete_all_and_send(message, msg, parse_mode="Markdown")
     except Exception as e:
-        await message.reply(f"Ошибка: {e}\nИспользуй: /goto <номер недели>")
+        await delete_all_and_send(message, f"Ошибка: {e}\nИспользуй: /goto <номер недели>")
 
 async def return_to_menu(message: types.Message):
     await start(message)
