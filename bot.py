@@ -91,7 +91,7 @@ async def handle_day_selection(message: types.Message):
 
     workout = build_workout(selected_day_code)
 
-    # Клавиатура с возвратом к выбору дня
+    # Клавиатура только с возвратом к выбору дня
     keyboard = types.ReplyKeyboardMarkup(
         row_width=1,
         resize_keyboard=True,
