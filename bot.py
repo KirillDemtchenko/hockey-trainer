@@ -143,6 +143,7 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(today_workout, commands=['today'])
     dp.register_message_handler(today_workout, text=["Тренировка на сегодня"])
     dp.register_message_handler(return_to_menu, text="Вернуться в меню")
+    dp.register_message_handler(hockey_train, text=["Выбор дня"])
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
