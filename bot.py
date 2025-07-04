@@ -51,6 +51,7 @@ async def start(message: types.Message):
         one_time_keyboard=True
     )
     keyboard.add(types.KeyboardButton("Тренировка на сегодня"))
+    keyboard.add(types.KeyboardButton("Выбор дня"))
     await message.reply("Показать тренировку?", reply_markup=keyboard)
 
 async def hockey_train(message: types.Message):
@@ -61,6 +62,7 @@ async def hockey_train(message: types.Message):
     )
     days = [types.KeyboardButton(day) for day in ru_to_code.keys()]
     keyboard.add(*days)
+    keyboard.add(types.KeyboardButton("Вернуться в меню"))
     await message.reply("Выберите день недели:", reply_markup=keyboard)
 
 async def handle_day_selection(message: types.Message):
@@ -140,6 +142,7 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(goto_week, commands=['goto'])
     dp.register_message_handler(today_workout, commands=['today'])
     dp.register_message_handler(today_workout, text=["Тренировка на сегодня"])
+    dp.register_message_handler(return_to_menu, text="Вернуться в меню")
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
@@ -291,3 +294,6 @@ async def goto_week(message: types.Message):
         await message.reply(msg, parse_mode="Markdown")
     except Exception as e:
         await message.reply(f"Ошибка: {e}\nИспользуй: /goto <номер недели>")
+
+async def return_to_menu(message: types.Message):
+    await start(message)
