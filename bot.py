@@ -65,12 +65,25 @@ async def hockey_train(message: types.Message):
     keyboard.add(types.KeyboardButton("Вернуться в меню"))
     await message.reply("Выберите день недели:", reply_markup=keyboard)
 
+async def delete_prev_and_send(message, text, reply_markup=None, parse_mode=None):
+    # Удаляем предыдущее сообщение пользователя (если не команда)
+    try:
+        if message.reply_to_message:
+            await message.bot.delete_message(message.chat.id, message.reply_to_message.message_id)
+        await message.bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
+    # Отправляем новое сообщение
+    sent = await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+    return sent
+
 async def handle_day_selection(message: types.Message):
     selected_day_ru = message.text.capitalize()
     selected_day_code = ru_to_code.get(selected_day_ru)
 
     if not selected_day_code:
-        await message.reply(
+        await delete_prev_and_send(
+            message,
             "Неизвестный день недели. Попробуйте снова.",
             reply_markup=types.ReplyKeyboardRemove()
         )
@@ -78,20 +91,19 @@ async def handle_day_selection(message: types.Message):
 
     workout = build_workout(selected_day_code)
 
-    # Клавиатура с возвратом
+    # Клавиатура с возвратом к выбору дня
     keyboard = types.ReplyKeyboardMarkup(
         row_width=1,
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    # Исправлен текст кнопки для соответствия обработчику
-    keyboard.add(types.KeyboardButton("Вернуться в меню"))
+    keyboard.add(types.KeyboardButton("Назад к выбору дня"))
 
-    await message.reply(
+    await delete_prev_and_send(
+        message,
         workout,
         parse_mode="Markdown",
-        reply_markup=keyboard,
-        disable_web_page_preview=True
+        reply_markup=keyboard
     )
 
 # === Тренировка на сегодня ===
@@ -144,6 +156,7 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(today_workout, text=["Тренировка на сегодня"])
     dp.register_message_handler(return_to_menu, text="Вернуться в меню")
     dp.register_message_handler(hockey_train, text=["Выбор дня"])
+    dp.register_message_handler(return_to_day_select, text="Назад к выбору дня")
     log.debug('Handlers зарегистрированы')
 
 async def process_event(event, dp: Dispatcher):
@@ -298,3 +311,6 @@ async def goto_week(message: types.Message):
 
 async def return_to_menu(message: types.Message):
     await start(message)
+
+async def return_to_day_select(message: types.Message):
+    await hockey_train(message)
