@@ -65,7 +65,11 @@ async def hockey_train(message: types.Message):
     keyboard.add(types.KeyboardButton("Вернуться в меню"))
     await message.reply("Выберите день недели:", reply_markup=keyboard)
 
+# === Глобальная переменная для хранения id последнего сообщения бота ===
+last_bot_message_id = None
+
 async def delete_prev_and_send(message, text, reply_markup=None, parse_mode=None):
+    global last_bot_message_id
     # Удаляем предыдущее сообщение пользователя (если не команда)
     try:
         if message.reply_to_message:
@@ -73,8 +77,15 @@ async def delete_prev_and_send(message, text, reply_markup=None, parse_mode=None
         await message.bot.delete_message(message.chat.id, message.message_id)
     except Exception:
         pass
+    # Удаляем предыдущее сообщение бота
+    if last_bot_message_id:
+        try:
+            await message.bot.delete_message(message.chat.id, last_bot_message_id)
+        except Exception:
+            pass
     # Отправляем новое сообщение
     sent = await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+    last_bot_message_id = sent.message_id
     return sent
 
 async def handle_day_selection(message: types.Message):
